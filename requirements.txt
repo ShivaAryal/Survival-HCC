@@ -1,0 +1,11 @@
+Libraries needed to run the project
+
+- keras
+- tensorflow
+- urllib
+- pandas
+- warnings
+- numpy
+- scipy
+- sklearn
+- lifelines

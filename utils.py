@@ -5,7 +5,6 @@ from scipy import stats
 from scipy import spatial
 from scipy import interp
 from scipy import cluster
-from collections import Counter
 from sklearn.svm import LinearSVC
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_curve, auc
