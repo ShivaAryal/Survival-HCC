@@ -13,7 +13,7 @@ I have further calculated the Harrell's c-index.
 I have trained the autoencoder with the miRNA, methylation and rna data of 360 samples. I am currently working in finding the latent factors which are most probable factor for patient survival.
 
 ## We can run the file with 
-python main.py 
+##### python main.py 
 
 
 P.S. necessary python packages should be installed first with pip
