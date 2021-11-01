@@ -10,5 +10,8 @@ The latent factors that the Variational Autoencoders result are done clusturing 
 I have further calculated the Harrell's c-index.
 
 
-The project isn't completed as I am getting stuck in formatting the datasets found in the internet. Much of my time was spent in understanding the research paper and the new things implemented in this paper. But, I am quite sure, If I get some more time, I can get this basic workflow done.
+I have trained the autoencoder with the miRNA, methylation and rna data of 360 samples. I am currently working in finding the latent factors which are most probable factor for patient survival.
 
+## We can run the file with 
+python main.py 
+P.S. necessary python packages should be installed first with pip
