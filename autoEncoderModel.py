@@ -6,8 +6,10 @@ from keras import backend as K
 from scipy import spatial, cluster
 from sklearn.cluster import KMeans
 from sklearn.base import BaseEstimator
-from .autoEncoderArchitectures import deep_vae, train_model
-from .utils import select_clinical_factors, compute_harrells_c
+from autoEncoderArchitectures import deep_vae, train_model
+from utils import select_clinical_factor, compute_harrells_c
+import utils
+
 
 class MainModel(BaseEstimator):
     # trains a vae to find latent factors
@@ -51,6 +53,8 @@ class MainModel(BaseEstimator):
             relu_embedding=relu_embedding,
         )
 
+        print("---", self.architecture)
+
         if input_dim is not None:
             vae, encoder, sampling_encoder, decoder, beta = self.architecture(
                 input_dim,
@@ -76,7 +80,6 @@ class MainModel(BaseEstimator):
 
         self.feature_names = None
 
-
     def fit(self, X, y=None, X_validation=None, *args, **kwargs):
         # train autoencoder model
 
@@ -92,6 +95,13 @@ class MainModel(BaseEstimator):
             raise ValueError("Feature mismatch between X and X_val!")
 
         if not hasattr(self, "vae"):
+            print(self.x_.shape, self.architecture(
+                self.x_.shape[1],
+                hidden_dims=self.n_hidden,
+                latent_dim=self.n_latent,
+                batch_size=self.batch_size,
+                epochs=self.epochs,
+            ))
             vae, encoder, sampling_encoder, decoder, beta = self.architecture(
                 self.x_.shape[1],
                 hidden_dims=self.n_hidden,
@@ -158,7 +168,7 @@ class MainModel(BaseEstimator):
                     "Must provide ``ami_y`` if using 'ami' to select optimal K."
                 )
             z_to_use = self.z_.loc[ami_y.index]
-            scorer = lambda yhat: adjusted_mutual_info_score(ami_y, yhat)
+            def scorer(yhat): return adjusted_mutual_info_score(ami_y, yhat)
             yhats = {
                 k: pd.Series(
                     KMeans(k, **kmeans_kwargs).fit_predict(z_to_use),
@@ -185,14 +195,14 @@ class MainModel(BaseEstimator):
     def select_clinical_factors(
         self,
         survival,
-        duration_column="duration",
-        observed_column="observed",
+        duration_column="days",
+        observed_column="event",
         alpha=0.05,
         cox_penalizer=0,
-    ): 
+    ):
         # select latent factors which are predictivive of survival
 
-        self.z_clinical_ = select_clinical_factors(
+        self.z_clinical_ = utils.select_clinical_factor(
             self.z_,
             survival,
             duration_column=duration_column,
@@ -206,14 +216,14 @@ class MainModel(BaseEstimator):
         self,
         survival,
         clinical_only=True,
-        duration_column="duration",
-        observed_column="observed",
+        duration_column="days",
+        observed_column="event",
         cox_penalties=None,
         cv_folds=5,
         sel_clin_alpha=0.05,
         sel_clin_penalty=0,
     ):
-        #Compute's Harrell's c-Index
+        # Compute's Harrell's c-Index
         if cox_penalties is None:
             cox_penalties = [0.1, 1, 10, 100, 1000, 10000]
         if clinical_only:
@@ -232,7 +242,8 @@ class MainModel(BaseEstimator):
 
     def _dict2array(self, X):
         self._validate_X(X)
-        new_feature_names = [f"{k}: {c}" for k in sorted(X.keys()) for c in X[k].index]
+        new_feature_names = [f"{k}: {c}" for k in sorted(
+            X.keys()) for c in X[k].index]
         sample_names = X[list(X.keys())[0]].columns
         ret = pd.DataFrame(
             np.vstack([X[k] for k in sorted(X.keys())]).T,
@@ -250,8 +261,8 @@ class MainModel(BaseEstimator):
             raise ValueError("data must be a dict")
 
         df1 = X[list(X.keys())[0]]
-        if any(df.columns.tolist() != df1.columns.tolist() for df in X.values()):
-            raise ValueError("All dataframes must have same samples (columns)")
+        # if any(df.columns.tolist() != df1.columns.tolist() for df in X.values()):
+        #     raise ValueError("All dataframes must have same samples (columns)")
 
         if any(len(df.index) == 0 for df in X.values()):
             raise ValueError("One of the DataFrames was empty.")

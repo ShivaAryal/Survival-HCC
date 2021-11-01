@@ -10,35 +10,39 @@ from sklearn.svm import LinearSVC
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import label_binarize
-from sklearn.preprocessing import StandardScalar
+# from sklearn.preprocessing import StandardScalar
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import cross_val_predict
 
-def select_clinical_factors(
+
+def select_clinical_factor(
     z,
     survival,
-    duration_column="duration",
-    observed_column="observed",
+    duration_column="days",
+    observed_column="event",
     alpha=0.05,
     cox_penalizer=0,
 ):
-    #Select latent factors which are predictive of survival.
+    # Select latent factors which are predictive of survival.
     cox_coefficients = _cph_coefs(
         z, survival, duration_column, observed_column, penalizer=cox_penalizer
     )
     signif_cox_coefs = cox_coefficients.T[cox_coefficients.T.p < alpha]
     return z.loc[:, signif_cox_coefs.index]
 
+
 def _cph_coefs(z, survival, duration_column, observed_column, penalizer=0):
-    #Compute one CPH model for each latent factor in z
+    # Compute one CPH model for each latent factor in z
     import lifelines
+
+    print("--------------------", survival)
     return pd.concat(
         [
-            lifelines.CoxPHFitter(penalizer=penalizer)
+            lifelines.CoxPHFitter()
             .fit(
                 survival.assign(LF=z.loc[:, i]).dropna(),
-                duration_column,
-                observed_column,
+                'days',
+                'event'
             )
             .summary.loc["LF"]
             .rename(i)
@@ -47,15 +51,16 @@ def _cph_coefs(z, survival, duration_column, observed_column, penalizer=0):
         axis=1,
     )
 
+
 def compute_harrells_c(
     z,
     survival,
-    duration_column="duration",
-    observed_column="observed",
+    duration_column="days",
+    observed_column="event",
     cox_penalties=None,
     cv_folds=5,
 ):
-    #Compute's Harrell's c-Index 
+    # Compute's Harrell's c-Index
     if cox_penalties is None:
         cox_penalties = [0.1, 1, 10, 100, 1000, 10000]
     cvcs = [
@@ -69,8 +74,8 @@ def _cv_coxph_c(
     z,
     survival,
     penalty,
-    duration_column="duration",
-    observed_column="observed",
+    duration_column="days",
+    observed_column="event",
     cv_folds=5,
 ):
     import lifelines
